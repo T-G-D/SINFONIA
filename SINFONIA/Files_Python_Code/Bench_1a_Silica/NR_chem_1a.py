@@ -9,13 +9,13 @@ Permission to use and redistribute the source code or binary forms of this softw
 hereby granted provided that the above notice of copyright, these terms of use, and the disclaimer of warranty below appear in the source code
 and documentation. The names of the authors, or their institutions, may not be used to endorse or promote products derived from this software 
 without specific prior written permission from all parties.
+If the code, or parts of it are published or used as a part of a scientific publication, proper credit to the original publication: Gil-Diaz et al. (2021) must be given.
  
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
 THE USE OR OTHER DEALINGS IN THIS SOFTWARE.
 """
-################################################################
 
 from NR_solver_1a import calc_IS, simplex_point, NR_fit
 import numpy as num
@@ -61,7 +61,7 @@ Bolz = 1                        # Bolzano's approach used in the Newton-Raphson 
 
 Labels = ['H+','Na+','Cl-','OH-','>SOH','>SO-']  #Defining labels for the species involved in the chemical system 
 
-Zspec = num.array([1, 1, -1, -1, 0, 0], float)   # Zspec: Vector with solution species charges 
+Zspec = num.array([1, 1, -1, -1, 0, 0], float)   # Zspec: Vector with product species charges 
 #note: surface species have no activity and therefore no charge is specified here
 
 K = num.array([0.0, 0.0, 0.0, -14, 0.0, -6.81], float)  #K: Vector with log10_k values for reactions considered in LMA calculations
@@ -123,7 +123,7 @@ for pH in range(len(pH_range)):
     # T: Vector with the total concentrations of components
     # T: T = (H, Na, Cl, SOH); total H is defined as activity because pH will be fixed
     T = num.array([10**(-pH_range[pH]), T1+pH_corr_T1[pH], T2+pH_corr_T2[pH], 0.0], float)
-    Zcomp = num.array([1, 1, -1, 0], float)
+    Zcomp = num.array([1, 1, -1, 0], float) #charges of components for activity calculations
     #calculate total concentration of surface sites from surf
     T[-1] = surf[0]/6.02214086e5 * surf[1] * surf[2]
 
@@ -144,10 +144,11 @@ for pH in range(len(pH_range)):
         feldlist = num.ndarray((0,1001),float)
         iballist = num.ndarray((0,1001),float)
         
+        #create an instance of simplex_point, the class holding all necessary values and functions to calculate the chemical equilibrium under charge regulation consitions
         result = simplex_point(K,A,T,Zcomp,Zspec,IS,X,cap,surf, dist, Activities = Activities)
         result.calc_MB(False) #starting point for simplex
 
-        result = NR_fit(tr, Bolz, result, True) #start Newton-Raphson fitting routine
+        result = NR_fit(tr, Bolz, result, True) #start Newton-Raphson optimization routine, solving the chemical equilibrium system
         #param 1: target residual
 
         #calculating equivalent kappa distances and KH/2 conversions

@@ -1,22 +1,3 @@
-"""
-SINFONIA, a Python based code for Speciation and Interparticle Forces for Nanoscale Interactions
-
-Copyright (c) 2021
- 
-Authors: Frank Heberling (frank.heberling@kit.edu) and Teba Gil-Diaz
- 
-Permission to use and redistribute the source code or binary forms of this software and its documentation, with or without modification is 
-hereby granted provided that the above notice of copyright, these terms of use, and the disclaimer of warranty below appear in the source code
-and documentation. The names of the authors, or their institutions, may not be used to endorse or promote products derived from this software 
-without specific prior written permission from all parties.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-THE USE OR OTHER DEALINGS IN THIS SOFTWARE.
-"""
-################################################################
-
 from bvp import solve_bvp
 import numpy as num
 
@@ -26,7 +7,7 @@ def calc_IS(Z, C):
 ############################### surface complexation model calculations #######
 ############################### all performed in simplex_point ################
 class simplex_point:
-    #class that contains all information and functions to perform surface complexation model calculation
+    #class used in NR_fit, that contains all information and functions to perform mass balance and electrostaic balance calculations
     def __init__(self,K,A,B,T,Zcomp, Zspec,IS,X,cap_xy,cap_z, surf_xy, surf_z, dist, eps_r, eps_0, Temp, kb, e, Activities = True):
         self.surf_xy = surf_xy
         self.surf_z = surf_z
@@ -110,7 +91,7 @@ class simplex_point:
         return
     
     def calc_act_coeff1(self):
-        #calculation of Davies activity coefficients for Solution Master species
+        #calculation of Davies activity coefficients for components
         if self.Activities:
             self.G1 = num.ndarray((len(self.Zcomp)), float)
             for i in range(len(self.G1)):
@@ -133,7 +114,7 @@ class simplex_point:
         return
 
     def calc_MB(self, EL):
-        #calculation of chemical Mass balance
+        #calculation of chemical mass balance
         self.X[1:] = self.adj[:]
         self.Y = num.zeros((len(self.X)),float)
         self.calc_act_coeff1()
@@ -212,7 +193,7 @@ class simplex_point:
             return psi, feld, ion_balance, sig_diff_bvp, osmo
 ################################# NR main routine ###########################
 def NR_fit(params, Bolz, point, EL, eps_r, eps_0):
-    
+    #main routine optimizing the chemical equilibrium system
     tr = params
     Bolz = Bolz
     eps_r = eps_r
@@ -266,6 +247,7 @@ def NR_fit(params, Bolz, point, EL, eps_r, eps_0):
             point.J[a][a-1] += point.cap_z[2]/conv_fact_z/10**point.adj[a-1]
             point.J[a][a] -= point.cap_z[2]/conv_fact_z/10**point.adj[a]
                 
+            #modificatin of Jacobian to accommodate charge regulation boundary conditions
             dpsid_xy1 = point.dpsi_dxy
             dpsid_z1 = point.dpsi_dz        
                 

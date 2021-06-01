@@ -29,10 +29,10 @@ t0 = time.clock()
 filename = 'Benchmark_3c_' ##filename from the library, must be equal to filename defined in "NR_chem_3c.py"
 
 # Choose the geometry for the force-distance calculations:
-sphere_sphere = False                # approaching spheres (True)
-sphere_plane = True                  # sphere-plane, equivalent to approaching parallel cylinders (True)
-plane_plane = False                  # approaching planes (True)
-Normalized_force = True              # to obtain Force-distance curves with normalized forces to tip radius
+sphere_sphere = False                # approaching spheres, two radii required below
+sphere_plane = True                  # sphere-plane, equivalent to approaching parallel cylinders
+plane_plane = False                  # approaching planes
+Normalized_force = True              # to obtain Force-distance curves with forces normalized to tip radius
 
 Overview_File = True                 #produce general output file with overview of results
 
@@ -175,7 +175,7 @@ for s in range(len(Initial_IS)):
             app3 = '_NOvdw_'
         else:
             app3 = '_'
-        filenamex = filename+str(Initial_IS[s])+'_pH_Forces_'+app1+app2+app3+'general_output.dat'
+        filenamex = filename+str(Initial_IS[s])+'_pH_Forces'+app1+app2+app3+'general_output.dat'
         g = file((filenamex), 'w')
         g.write(filename+'\n\n')
                 

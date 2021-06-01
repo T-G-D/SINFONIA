@@ -9,6 +9,7 @@ Permission to use and redistribute the source code or binary forms of this softw
 hereby granted provided that the above notice of copyright, these terms of use, and the disclaimer of warranty below appear in the source code
 and documentation. The names of the authors, or their institutions, may not be used to endorse or promote products derived from this software 
 without specific prior written permission from all parties.
+If the code, or parts of it are published or used as a part of a scientific publication, proper credit to the original publication: Gil-Diaz et al. (2021) must be given.
  
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
@@ -17,34 +18,28 @@ THE USE OR OTHER DEALINGS IN THIS SOFTWARE.
 """
 ################################################################
 
-from NR_solver_3c import calc_IS, simplex_point, NR_fit
 import h5py
 import numpy as num
-from matplotlib import pyplot
 import time
+from matplotlib import pyplot
+from NR_solver_3c import calc_IS, simplex_point, NR_fit
+
 
 t0 = time.clock()
 ################################################################
 ########### USER INPUT #########################################
-filename = 'Benchmark_3c_' #filename for the library
+filename = 'Benchmark_3c_' #filename for the ouput hdf library
 
 pH_range = num.array([3.8, 5.0, 6.3], float)
-#pH_range = num.arange(3.0,8.0,1.0) #define the pH range and increment step
+#list of pH values at which calculations are performed
 
-Initial_IS = [0.001]    # define working ionic strength (M)
+Initial_IS = [0.001]    # define working ionic strength (M), will be used as total Na+ and Cl- concentration in this example
 
 #pH corrections for e.g. T1m = Na+, T2m = Cl-. Rows are in range(len(Initial_IS)) and columns in pH_range
 #For Benchmark 3c no pH corrections were required.
-#otherwise the data for the pH adjustments comes from corresponding PhreeqC output calculations.
-pH_corr_T1m = num.array([\
- [0.0, 0.0, 0.0, 0.0, 0.0],\
- [0.0, 0.0, 0.0, 0.0, 0.0],\
- ], float)
-
-pH_corr_T2m = num.array([\
- [0.0, 0.0, 0.0, 0.0, 0.0],\
- [0.0, 0.0, 0.0, 0.0, 0.0],\
- ], float)
+#otherwise the data represent acid (HCl) or base (NaOH) additions needed to adjust the pH to values specified above.
+pH_corr_T1m = num.array([[0.0, 0.0, 0.0]], float)
+pH_corr_T2m = num.array([[0.0, 0.0, 0.0]], float)
 
 #defining distances between surfaces (nm)
 D = num.concatenate((num.linspace(50,30,5),num.linspace(29,10,10),num.linspace(9,0.1,50),[0.08,0.05,0.01]))
@@ -127,7 +122,7 @@ Far = 9.64853e4
 kb = 1.38062e-23
 R = 8.314463
 
-#loop through ionic strengths
+#loop through ionic strengths (in this example only one value is given)
 for s in range(len(Initial_IS)):
     
     grp1=base.create_group('IS_'+str(Initial_IS[s]))    #starting the dictionary to collect data per ionic strength
@@ -143,15 +138,14 @@ for s in range(len(Initial_IS)):
         sbgrp1 = grp1.create_group('pH_'+str(pH_range[pH]))
         
         # T: Vector with the total concentrations of components
-        # T: T = (H, Na, Cl, SOH); total H is defined as activity because pH will be fixed
+        # T: T = (H, Na, Cl, TiOH, FeOH); total H is defined as activity because pH will be fixed
         T = num.array([10**(-pH_range[pH]), T1+pH_corr_T1[pH], T2+pH_corr_T2[pH], 0.0, 0.0], float)
-        Zcomp = num.array([1, 1, -1, 0, 0], float)
+        Zcomp = num.array([1, 1, -1, 0, 0], float) #charges of components used to calculate activity corrections
 
-        #calculate total concentration of surface sites from surf
-        T[-2] = surf_Ti[0]/6.02214086e5 * surf_Ti[1] * surf_Ti[2]
-        T[-1] = surf_Fe[0]/6.02214086e5 * surf_Fe[1] * surf_Fe[2]
+        T[-2] = surf_Ti[0]/6.02214086e5 * surf_Ti[1] * surf_Ti[2] #set the total surface site concentration based on surface definition given above 
+        T[-1] = surf_Fe[0]/6.02214086e5 * surf_Fe[1] * surf_Fe[2] #set the total surface site concentration based on surface definition given above 
             
-        # X: Starting values for log10 master-species concentrations, H+ is always first with known activity
+        # X: Starting values for log10 master-species concentrations set to the corresponding total component concentrations, H+ is always first with fixed activity
         X = num.log10(T)
         #append 8 zeros to T and X, starting values for surface charges and potentials in FLM for respective surfaces (TiOH and FeOH)
         T = num.append(T, [0.,0.,0.,0.,0.,0.,0.,0.])
@@ -161,11 +155,11 @@ for s in range(len(Initial_IS)):
         # IS ionic strength
         IS = calc_IS(Zcomp, X) # initial guess for the ionic strength
 
-        #loop through distances defined as KH/2
+        #loop through distances defined in nm
         for d in range(len(D)):
             dist = D[d]
             result = simplex_point(K,A,B,T,Zcomp,Zspec,IS,X,cap_Ti,cap_Fe,surf_Ti, surf_Fe, dist, eps_r, eps_0, Temp, kb, e, Activities = Activities)
-            result.calc_MB(False) #starting point for simplex
+            result.calc_MB(False) #starting point for equilibrium calculation
 
             result = NR_fit(tr, Bolz, result, True, eps_r, eps_0) #start Newton-Raphson fitting routine
             #param 1: target residual

@@ -146,7 +146,7 @@ for s in range(len(Initial_IS)):
             MBlist = num.append(MBlist, sum_resid)
     
     #write overarching results file for all distances and pHs
-    filenamex = filename+str(Initial_IS[s])+'general_output.dat'
+    filenamex = filename+str(Initial_IS[s])+'_general_output.dat'
     g = file((filenamex), 'w')
     g.write(filename+'\n\n')
             
